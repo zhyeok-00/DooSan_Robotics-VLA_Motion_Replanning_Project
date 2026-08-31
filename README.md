@@ -15,23 +15,46 @@ Doosan **M0609** 협동로봇과 **OnRobot RG2** 그리퍼를 기반으로,
 > 두 계층은 JSON 3채널로만 연결되며, 모션 취소 · 그리퍼 개폐 · 물체 보유 상태 · 충돌 씬 관리는 모두 FSM이 담당합니다.
 > LLM 응답이 느려지거나 잘못되더라도 팔의 안전 동작에는 영향을 주지 않도록 설계했습니다.
 
+### 명령부터 로봇 동작까지
+
+```mermaid
+flowchart LR
+    USER["사용자<br/>음성·자연어 명령"]
+
+    subgraph VLA["VLA 판단 계층"]
+        GUI["VLA GUI"]
+        AGENT["명령 해석<br/>규칙 처리 · VLM 판단"]
+        BRIDGE["RobotAction 생성"]
+    end
+
+    subgraph CONTROL["로봇 제어 계층"]
+        RECEIVER["명령 수신"]
+        FSM["안전 FSM<br/>인식 · 계획 · 승인 · 실행"]
+        PLANNER["MoveIt / cuMotion<br/>경로계획"]
+    end
+
+    ROBOT["Doosan M0609<br/>OnRobot RG2"]
+
+    USER --> GUI
+    GUI --> AGENT
+    AGENT --> BRIDGE
+    BRIDGE -->|"JSON 작업 명령"| RECEIVER
+    RECEIVER --> FSM
+    FSM --> PLANNER
+    PLANNER --> ROBOT
 ```
-사람 ──▶ vla_gui ──▶ agent_node                 판단 계층
-                     ├ Tier 1 규칙 (LLM 없이 처리 가능한 것)
-                     └ Tier 2 대화 (GPT-5-mini + 카메라 사진)
-                          │ RobotAction
-                          ▼
-                   vla_pick_bridge_node
-                          │ /vla/pick_command  (JSON)
-        ══════════════════╪══════════════════   ← 워크스페이스 경계
-                          ▼
-                   vla_command_node ──▶ task_manager (pick_fsm)   안전 계층
-                                            │  PERCEIVE → PLAN → APPROACH
-                                            │  → DESCEND → CLOSE → LIFT
-                                            │  → WAIT_PLACE_TARGET → PLACE
-                                            ▼
-                                   MoveIt / cuMotion ──▶ M0609 + RG2
-```
+
+1. **VLA 판단 계층**은 사용자의 명령과 카메라 영상을 해석해 대상·개수·목적지를 결정합니다.
+2. 결정된 작업은 좌표나 관절값이 아닌 **JSON 작업 명령**으로 로봇 제어 계층에 전달됩니다.
+3. **안전 FSM**이 인식, 경로계획, 승인, 파지와 이동을 검증한 후 실제 로봇을 구동합니다.
+
+| 역할 | ROS 2 노드 |
+| --- | --- |
+| 사용자 인터페이스 | `vla_gui` |
+| 자연어·영상 판단 | `agent_node` |
+| 계층 간 명령 변환 | `vla_pick_bridge_node` |
+| 로봇 명령 수신 | `vla_command_node` |
+| 안전 상태머신 | `task_manager` (`pick_fsm`) |
 
 | 두 축 | 핵심 책임 | 주요 구현 |
 | --- | --- | --- |
