@@ -4,8 +4,8 @@
   <name>vla_system</name>
   <version>1.0.0</version>
   <description>Refactored voice-language-action perception and robot-control pipeline.</description>
-  <maintainer email="maintainer@example.com">VLA Project</maintainer>
-  <license>Apache-2.0</license>
+  <maintainer email="m0609-vla-project@users.noreply.github.com">VLA Project</maintainer>
+  <license>MIT</license>
 
   <depend>rclpy</depend>
   <depend>rcl_interfaces</depend>

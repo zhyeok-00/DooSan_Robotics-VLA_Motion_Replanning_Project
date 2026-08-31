@@ -26,9 +26,9 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='rokey',
-    maintainer_email='rokey@todo.todo',
+    maintainer_email='m0609-vla-project@users.noreply.github.com',
     description='음성/VLA 지시를 pick_fsm 의 /get_keyword 계약으로 옮기는 지시 입력 층',
-    license='TODO: License declaration',
+    license='MIT',
     extras_require={
         'test': [
             'pytest',

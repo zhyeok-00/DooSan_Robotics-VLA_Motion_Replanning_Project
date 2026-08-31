@@ -4,8 +4,8 @@
   <name>pick_fsm</name>
   <version>0.1.0</version>
   <description>음성 지시 pick 상태머신 (task_manager). MoveIt + RG2 명령 경로를 단독 소유한다.</description>
-  <maintainer email="wook9980@gmail.com">kimkh</maintainer>
-  <license>Apache-2.0</license>
+  <maintainer email="m0609-vla-project@users.noreply.github.com">kimkh</maintainer>
+  <license>MIT</license>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>

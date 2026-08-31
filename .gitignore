@@ -35,4 +35,12 @@ rosbag*/
 .vscode/
 .idea/
 .obsidian/
+*.db
+*.db-shm
+*.db-wal
+*.db.lock
+*.tmp
 *.swp
+
+# 모델은 공식 제공처에서 scripts/fetch_models.sh로 받는다.
+*.pt

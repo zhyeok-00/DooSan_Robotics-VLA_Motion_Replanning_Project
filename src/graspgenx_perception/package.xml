@@ -4,8 +4,8 @@
   <name>graspgenx_perception</name>
   <version>0.0.0</version>
   <description>GraspGenX 파이프라인 인식 패키지 — YOLO/기하 세그멘테이션, grasp 브릿지</description>
-  <maintainer email="wook9980@gmail.com">kimkh</maintainer>
-  <license>TODO: License declaration</license>
+  <maintainer email="m0609-vla-project@users.noreply.github.com">kimkh</maintainer>
+  <license>MIT</license>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>

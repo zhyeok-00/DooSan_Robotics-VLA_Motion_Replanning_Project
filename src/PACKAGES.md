@@ -2247,7 +2247,7 @@ python3 keyword_extraction.py  # 예시 문장으로 파싱 확인
 #### API 키
 `STT.py`와 `keyword_extraction.py`는 **같은 디렉토리의 `.env`** 에서 `OPENAI_API_KEY`를 읽는다.
 ```
-OPENAI_API_KEY=sk-...
+OPENAI_API_KEY=replace_with_your_openai_api_key
 ```
 `.env`는 커밋하지 않는다.
 

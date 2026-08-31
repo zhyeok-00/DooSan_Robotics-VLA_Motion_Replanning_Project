@@ -4,8 +4,8 @@
   <name>voice_processing</name>
   <version>0.0.0</version>
   <description>음성/VLA 지시를 pick_fsm 의 /get_keyword 계약으로 옮기는 지시 입력 층</description>
-  <maintainer email="rokey@todo.todo">rokey</maintainer>
-  <license>TODO: License declaration</license>
+  <maintainer email="m0609-vla-project@users.noreply.github.com">rokey</maintainer>
+  <license>MIT</license>
 
   <!-- vla_command_node 가 쓰는 전부. 표준 ROS 2 만 쓴다 -->
   <exec_depend>rclpy</exec_depend>

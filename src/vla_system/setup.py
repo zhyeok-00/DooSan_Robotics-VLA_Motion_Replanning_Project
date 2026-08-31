@@ -18,9 +18,9 @@ setup(
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="VLA Project",
-    maintainer_email="maintainer@example.com",
+    maintainer_email="m0609-vla-project@users.noreply.github.com",
     description="Conversational LLM-driven picking system for M0609 + RG2",
-    license="Apache-2.0",
+    license="MIT",
     entry_points={
         "console_scripts": [
             "perception_node = vla_system.nodes.perception_node:main",

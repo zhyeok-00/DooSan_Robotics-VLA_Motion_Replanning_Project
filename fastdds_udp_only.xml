@@ -17,7 +17,7 @@ FastDDS 를 UDPv4 전용으로 강제한다. 호스트 <-> 도커 컨테이너 �
     docker run 의 pid=host   PID 네임스페이스를 붙여도 안 온다.
 
 [주의] 호스트와 컨테이너 양쪽 터미널 모두에 export 해야 한다. 한쪽만 하면 여전히 안 온다.
-    export FASTRTPS_DEFAULT_PROFILES_FILE=/home/kimkh/cobot2_ws_new/fastdds_udp_only.xml
+    export FASTRTPS_DEFAULT_PROFILES_FILE="$PWD/fastdds_udp_only.xml"
 
 [대역폭] 640x480 bgr8 = 921KB 는 UDP 단편화 대상이라 소켓 버퍼가 결정적이다.
     이 랩탑은 net.core.rmem_max = 212992 (리눅스 기본)로 이미지 한 장보다 작지만,

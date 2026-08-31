@@ -7,10 +7,12 @@
      (dsr_moveit_config_m0609 demo.launch.py 아니다 — 패키지명 불일치로 애초에 안 뜨고,
       떠도 그 config URDF엔 RG2가 없다. README "알려진 함정" 참고.)
 
-TF 값을 여기 하드코딩하지 않는다. config/T_cam2base.npy를 읽어 매 launch마다 계산한다.
-재캘리브 후엔 npy만 갈아끼운다 (symlink-install이면 rebuild 불필요):
-  cp corecode/Calibration_Tutorial/T_cam2base.npy \
-     src/cobot_rg2/rg2/m0609_rg2_bringup/config/T_cam2base.npy
+TF 값을 여기 하드코딩하지 않는다. ``calibration_file`` launch 인자 또는
+``M0609_CALIBRATION_FILE`` 환경변수로 지정한 npy를 읽어 매 launch마다 계산한다:
+  export M0609_CALIBRATION_FILE=/absolute/path/to/T_cam2base.npy
+  ros2 launch m0609_rg2_bringup camera.launch.py
+또는:
+  ros2 launch m0609_rg2_bringup camera.launch.py calibration_file:=/absolute/path/to/T_cam2base.npy
 
 캘리브 미세보정(dxyz/drpy)은 아래 인자로 준다. 드라이버는 그대로 두고 TF만 다시 띄우며 맞춘다:
   ros2 launch m0609_rg2_bringup camera.launch.py driver:=false drpy:="0 1.5 0"
@@ -82,6 +84,11 @@ def _args():
                               description='캘리브 평행이동 보정 "x y z" (m, base_link 축)'),
         DeclareLaunchArgument('drpy', default_value='0 0 0',
                               description='캘리브 회전 보정 "roll pitch yaw" (deg, camera_link 축)'),
+        DeclareLaunchArgument(
+            'calibration_file',
+            default_value=os.environ.get('M0609_CALIBRATION_FILE', ''),
+            description='T_cam2base.npy 절대경로 (또는 M0609_CALIBRATION_FILE 환경변수)',
+        ),
         DeclareLaunchArgument('driver', default_value='true',
                               description='RealSense 드라이버 spawn 여부 (false면 TF만)'),
         DeclareLaunchArgument('depth_profile', default_value='424x240x15',
@@ -112,8 +119,10 @@ def _setup(context, *_):
         output='screen',
     )
 
-    # npy가 없으면 TF 노드만 빠지고 카메라는 뜬다 (캘리브 전에도 영상은 봐야 하니까).
-    calib_npy = os.path.join(pkg_share, 'config', 'T_cam2base.npy')
+    # 경로가 비었거나 npy가 없으면 TF 노드만 빠지고 카메라는 뜬다.
+    # 캘리브레이션은 장비 설치 자세에 종속되므로 저장소에 기본값을 넣지 않는다.
+    calib_value = LaunchConfiguration('calibration_file').perform(context).strip()
+    calib_npy = os.path.abspath(os.path.expanduser(calib_value)) if calib_value else ''
     calib_tf = []
     if os.path.exists(calib_npy):
         t, q = npy_to_tf_args(np.load(calib_npy), PARENT_FRAME, CHILD_FRAME)
@@ -131,7 +140,8 @@ def _setup(context, *_):
                       + [PARENT_FRAME, CHILD_FRAME],
         )]
     else:
-        print(f'[camera.launch] ⚠️ {calib_npy} 없음 — '
+        shown_path = calib_npy or 'calibration_file 미지정'
+        print(f'[camera.launch] ⚠️ {shown_path} — '
               f'{PARENT_FRAME}→{CHILD_FRAME} TF를 발행하지 않는다 (포인트클라우드가 로봇과 안 붙는다)')
 
     return [realsense_node] + calib_tf

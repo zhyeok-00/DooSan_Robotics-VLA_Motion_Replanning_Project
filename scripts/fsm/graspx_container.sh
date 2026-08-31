@@ -26,7 +26,8 @@
 set -uo pipefail
 
 CONTAINER=${GRASPX_CONTAINER:-od_kimkh}
-WS=${GRASPX_WS:-/home/kimkh/cobot2_ws_new}
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+WS=${GRASPX_WS:-$(cd "$SCRIPT_DIR/../.." && pwd)}
 # 정리 대상 범위. `graspgenx_perception` 은 이 컨테이너의 graspx 노드 전부(yolo_seg_node,
 # 컨테이너에서 띄운 grasp_bridge_node, ros2 launch 부모)를 잡는다. 호스트에서 도는
 # grasp_bridge_node 는 docker exec 범위 밖이라 영향이 없다. 컨테이너를 남과 공유하게 되면

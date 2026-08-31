@@ -4,8 +4,8 @@
   <name>m0609_rg2_bringup</name>
   <version>0.0.1</version>
   <description>Bringup package for Doosan M0609 with OnRobot RG2 gripper</description>
-  <maintainer email="your@email.com">your_name</maintainer>
-  <license>Apache-2.0</license>
+  <maintainer email="m0609-vla-project@users.noreply.github.com">VLA Project</maintainer>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

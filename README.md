@@ -1,7 +1,9 @@
-# 🤖 M0609 VLA Picking System
+# 🤖 M0609 VLA & Motion Planning Picking System
 
-자연어로 지시하면 협동로봇이 물체를 인식하고 집어 옮기는 시스템입니다.
-**VLM(GPT-5-mini)**이 *무엇을 · 몇 개를 · 어디로* 옮길지 판단하고, **deterministic FSM**이 *어떻게 움직이고 언제 멈추고 무엇을 놓지 않을지*를 담당합니다.
+자연어로 작업 의도를 해석하는 **VLA 판단 계층**과, 3D 인식·6-DoF 파지·경로계획·안전 실행을 담당하는
+**로봇 제어 계층**을 결합해 Doosan M0609와 OnRobot RG2로 물체를 집어 옮기는 시스템입니다.
+**VLM(GPT-5-mini)**은 *무엇을 · 몇 개를 · 어디로* 옮길지 판단하고, **deterministic FSM**은
+*어떻게 움직이고 언제 멈추고 무엇을 놓지 않을지*를 담당합니다.
 
 > **핵심 설계 원칙**: 판단(LLM)과 안전(FSM)을 **한 프로세스에 섞지 않습니다.**
 > 두 계층은 JSON 3채널로만 연결되며, 모션 취소 · 그리퍼 개폐 · 물체 보유 상태 · 충돌 씬 관리는 모두 FSM이 담당합니다.
@@ -24,6 +26,20 @@
                                             ▼
                                    MoveIt / cuMotion ──▶ M0609 + RG2
 ```
+
+| 두 축 | 핵심 책임 | 주요 구현 |
+| --- | --- | --- |
+| **VLA 판단** | 자연어·영상 맥락에서 대상, 개수, 목적지 결정 | `vla_system`, `vla_interfaces` |
+| **로봇 제어** | YOLO-seg, GraspGenX, 3점 IK, MoveIt·cuMotion, RG2, 안전 FSM | `graspgenx_perception`, `pick_fsm`, `cumotion`, `cobot_rg2` |
+
+두 계층은 JSON 경계로만 연결됩니다. LLM은 좌표·관절값·그리퍼·승인·정지를 직접 제어하지 않으며,
+로봇 계층은 VLA 없이도 독립적으로 계획·검증할 수 있습니다.
+
+> **검증 범위:** cuMotion·nvblox 연결과 반복 재계획은 프로토타입이며, **움직이는 장애물을 대상으로 한
+> 실행 중 회피는 아직 충분한 실기 반복 검증을 완료하지 않았습니다.** 구현과 실기 검증을 같은 의미로 사용하지 않습니다.
+
+로봇 계층의 파지 후보 선정, TF, FSM, 경로계획과 검증 범위는
+**[로봇 인식·모션 계층 상세](docs/ROBOTICS_LAYER.md)**에서 확인할 수 있습니다.
 
 ---
 
@@ -51,12 +67,32 @@
 
 ## 📌 주요 기능 (Key Features)
 
+### 두 축의 핵심 기능
+
+| VLA 판단 계층 | 로봇 인식·모션 계층 |
+| --- | --- |
+| 자연어·영상 맥락 해석 | D435i·YOLO-seg 기반 대상 인식 |
+| 대상·개수·목적지 결정 | GraspGenX 6-DoF 파지 후보 생성·필터링 |
+| 대화 기억과 후속 지시 반영 | Approach–Descend–Close–Lift–Place FSM |
+| 단순 명령 규칙 처리, 복합 명령 VLM 처리 | MoveIt OMPL 기준선과 cuMotion·nvblox 프로토타입 |
+| ROS JSON action 생성 | 승인·정지·재시도·stow 안전 경로 |
+
 ### 프로젝트 배경 및 목표
 
 작업 반경에 사람의 손이나 신체가 들어오더라도 위험 경로를 회피하여 **안전성(Safety)**을 확보하고, 사용자의 자연어 지시만으로 물체를 처리해 **편의성(Convenience)**을 높이며, 작업자와의 충돌로 인한 작업 중지를 줄여 **효율성(Efficiency)**을 개선하는 것을 목표로 기획했습니다.
 
 - **Problem**: 물체 위치 인식과 파지 자세 생성이 하나의 흐름으로 연결되어 있지 않았고, 실제 M0609 환경에서 동작 가능한 통합 구조가 필요했습니다.
-- **Goal**: 거치형 RealSense로 장애물을 3D로 감지·회피하고, 회피 후 정밀 인식을 통해 적절한 파지를 수행하며, LLM이 물체 정보를 구체적으로 파악하도록 구현했습니다.
+- **Goal**: 거치형 RealSense로 장애물을 3D로 인식하고 정밀 파지와 경로계획에 반영하며, LLM이 물체 정보를 구체적으로 파악하도록 구현했습니다.
+
+### 구현 및 검증 범위
+
+| 항목 | 상태 | 공개 시 주장 범위 |
+| --- | --- | --- |
+| D435i·YOLO-seg·GraspGenX 인식 경로 | 구현 | 패키지별 단위·합성·실기 기록을 구분 |
+| MoveIt 2 pick-and-place와 안전 FSM | 구현 | 가상·단위·실기 검증 항목을 구분 |
+| nvblox·cuMotion 연결 | 구현 | 컨테이너 통신과 계획 파이프라인 연결 |
+| 반복 재계획과 실행 궤적 교체 | 프로토타입 | 장애물 없는 조건의 기준선 검증 |
+| 움직이는 장애물 실행 중 회피 | **미검증** | 저속 실기 반복 시험 필요 |
 
 ### 무엇을 할 수 있나
 
@@ -108,7 +144,7 @@ flowchart TD
 - 상태 전이 규칙은 `states.py`의 `TRANSITIONS` 한 곳에서만 관리하여 로직이 여러 파일로 흩어지지 않도록 했습니다.
 - 계획(PLAN) 단계가 실패하면 차순위 파지 후보로 자동 전환합니다.
 - 그립 검증(VERIFY)에 실패하면 그리퍼를 다시 좁혀 재시도합니다.
-- 실행 중 장애물이 감지되면 `SAFE_STOP` 후 우회 경로를 재계획(`REPLAN`)하고 작업을 이어갑니다.
+- `SAFE_STOP`과 `REPLAN` 상태를 분리해 정지 후 재계획 경로를 설계했습니다. 다만 움직이는 장애물을 대상으로 한 실행 중 회피는 프로토타입 단계이며, 실기 검증이 완료된 기능으로 주장하지 않습니다.
 
 실제 운용 중에는 아래와 같은 `rqt` 기반 FSM 제어 패널로 상태 확인, 타겟 지정, 속도 조절, 비상정지, 안전모드 진입을 수행합니다.
 
@@ -190,7 +226,10 @@ cp .env.example .env && chmod 600 .env && $EDITOR .env
 python3 -m venv --system-site-packages .venv
 source .venv/bin/activate && pip install -r requirements-vla.txt && deactivate
 
-# ④ 컨테이너 빌드 및 실행 (YOLO-seg + GraspGenX)
+# ④ 공식 Ultralytics 모델 다운로드
+./scripts/fetch_models.sh
+
+# ⑤ 컨테이너 빌드 및 실행 (YOLO-seg + GraspGenX)
 #    🔴 마운트 경로는 호스트와 동일해야 합니다.
 #       스크립트가 호스트 경로를 컨테이너 내부에서 그대로 source하기 때문입니다.
 docker build -f docker/Dockerfile.graspx -t od_kimkh:rebuilt docker
@@ -201,9 +240,17 @@ docker run -d --name od_kimkh \
   -v $PWD:$PWD \
   od_kimkh:rebuilt sleep infinity
 
-# ⑤ 빌드
+# ⑥ 장비별 eye-to-hand 캘리브레이션 지정
+export M0609_CALIBRATION_FILE=/absolute/path/to/T_cam2base.npy
+
+# ⑦ 빌드
 ./scripts/build.sh
 ```
+
+모델 가중치는 저장소에 재배포하지 않습니다. `fetch_models.sh`가 Ultralytics 공식 모델 이름으로
+`yolo26s-seg.pt`와 `yolo11n-seg.pt`를 내려받아 각 패키지 경로에 배치합니다. 이전 실험용
+`yolov8n_tools_0122.pt`는 공식 출처를 확인할 수 없어 공개 설치 대상에서 제외했습니다.
+캘리브레이션 파일 역시 카메라 설치 자세마다 달라지므로 저장소에 포함하지 않습니다.
 
 ### 🔴 빌드 시 꼭 지켜주세요
 
@@ -223,7 +270,7 @@ docker run -d --name od_kimkh \
 
 ## 🚀 실행 순서 (How to Run)
 
-터미널 배치와 전체 실행 순서는 **[docs/RUNBOOK.md](https://github.com/wodud4143/DooSan_Robotics_VLA_Project/blob/main/docs/RUNBOOK.md)**가 정본 문서이니 참고해 주세요. 아래는 요약입니다.
+터미널 배치와 전체 실행 순서는 **[docs/RUNBOOK.md](docs/RUNBOOK.md)**가 정본 문서이니 참고해 주세요. 아래는 요약입니다.
 
 ```
 호스트     bringup(로봇) → RealSense
@@ -252,10 +299,10 @@ ros2 service call /pick/abort       std_srvs/srv/Trigger {}   # 파괴적 중단
 
 ```bash
 source /opt/ros/humble/setup.bash && source install/setup.bash
-python3 -m pytest src/pick_fsm/test src/voice_processing/test -q      # 79 passed
+python3 -m pytest src/pick_fsm/test src/voice_processing/test -q
 
 source .venv/bin/activate
-python3 -m pytest src/vla_system/test -q                              # 246 passed
+python3 -m pytest src/vla_system/test -q
 ```
 
 테스트는 로봇, 카메라, API 키 없이도 실행할 수 있습니다. 규칙 계층은 표 기반의 가짜 파서로 검증하며, 경계 JSON은 순수 함수로 검사합니다. 따라서 테스트가 실패했다면 LLM의 응답 문제가 아니라 로직 자체에 오류가 있다는 의미입니다.
@@ -282,8 +329,11 @@ python3 -m pytest src/vla_system/test -q                              # 246 pass
 
 | 문서 | 내용 |
 | --- | --- |
-| [docs/RUNBOOK.md](https://github.com/wodud4143/DooSan_Robotics_VLA_Project/blob/main/docs/RUNBOOK.md) | 터미널 배치와 실행 순서 (정본 문서) |
-| [docs/fsm/vla-bridge-contract.md](https://github.com/wodud4143/DooSan_Robotics_VLA_Project/blob/main/docs/fsm/vla-bridge-contract.md) | **경계 계약.** 두 계층을 잇는 JSON 스키마 |
-| [docs/fsm/context/constraints.md](https://github.com/wodud4143/DooSan_Robotics_VLA_Project/blob/main/docs/fsm/context/constraints.md) | **실제 로봇 운용 중 파악한 사실들.** 설계 문서와 다른 부분을 정리했습니다. |
-| [src/PACKAGES.md](https://github.com/wodud4143/DooSan_Robotics_VLA_Project/blob/main/src/PACKAGES.md) | 패키지별 상세 내용 · FSM 상태도 정본 |
-| [docs/fsm/README.md](https://github.com/wodud4143/DooSan_Robotics_VLA_Project/blob/main/docs/fsm/README.md) | 로봇 쪽 문서 지도 — 어떤 사실이 어느 문서에 있는지 |
+| [docs/ROBOTICS_LAYER.md](docs/ROBOTICS_LAYER.md) | **로봇 계층 요약.** 인식·파지·FSM·모션·검증 범위 |
+| [docs/vla/A4_INTEGRATION.md](docs/vla/A4_INTEGRATION.md) | VLA 판단 계층과 통합 설계 |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | 터미널 배치와 실행 순서 (정본 문서) |
+| [docs/fsm/vla-bridge-contract.md](docs/fsm/vla-bridge-contract.md) | **경계 계약.** 두 계층을 잇는 JSON 스키마 |
+| [docs/fsm/context/constraints.md](docs/fsm/context/constraints.md) | **실제 로봇 운용 중 파악한 사실들.** 설계 문서와 다른 부분을 정리했습니다. |
+| [src/PACKAGES.md](src/PACKAGES.md) | 패키지별 상세 내용 · FSM 상태도 정본 |
+| [docs/fsm/README.md](docs/fsm/README.md) | 로봇 쪽 문서 지도 — 어떤 사실이 어느 문서에 있는지 |
+| [docs/PUBLICATION_CHECKLIST.md](docs/PUBLICATION_CHECKLIST.md) | 공개 전 비밀정보·대용량·라이선스 점검 결과 |

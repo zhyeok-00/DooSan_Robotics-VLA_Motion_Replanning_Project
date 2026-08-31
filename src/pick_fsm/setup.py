@@ -18,9 +18,9 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='kimkh',
-    maintainer_email='wook9980@gmail.com',
+    maintainer_email='m0609-vla-project@users.noreply.github.com',
     description='음성 지시 pick 상태머신 (task_manager)',
-    license='Apache-2.0',
+    license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

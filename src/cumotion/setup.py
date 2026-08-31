@@ -21,9 +21,9 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='joon',
-    maintainer_email='joon5514@naver.com',
+    maintainer_email='m0609-vla-project@users.noreply.github.com',
     description='MoveIt(+cuMotion+nvblox) 재계획 루프로 두산 M0609 를 제어한다',
-    license='TODO: License declaration',
+    license='MIT',
     extras_require={
         'test': [
             'pytest',

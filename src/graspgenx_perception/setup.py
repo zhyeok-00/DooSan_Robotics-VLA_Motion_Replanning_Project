@@ -24,9 +24,9 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='kimkh',
-    maintainer_email='wook9980@gmail.com',
+    maintainer_email='m0609-vla-project@users.noreply.github.com',
     description='GraspGenX 파이프라인 인식 패키지 — YOLO/기하 세그멘테이션, grasp 브릿지',
-    license='TODO: License declaration',
+    license='MIT',
     extras_require={
         'test': [
             'pytest',
